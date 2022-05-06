@@ -7,8 +7,6 @@ Prerequisites:
 
 This can be run by doing
 
->>> python validate_jwt.py
-
 and passing in a JWT token that you have retrieved from the EVE SSO.
 """
 import sys
@@ -61,11 +59,11 @@ def validate_eve_jwt(jwt_token):
     except JWTClaimsError as e:
         try:
             return jwt.decode(
-                        jwt_token,
-                        jwk_set,
-                        algorithms=jwk_set["alg"],
-                        issuer="https://login.eveonline.com"
-                    )
+                jwt_token,
+                jwk_set,
+                algorithms=jwk_set["alg"],
+                issuer="https://login.eveonline.com"
+            )
         except JWTClaimsError as e:
             print("The issuer claim was not from login.eveonline.com or "
                   "https://login.eveonline.com: {}".format(str(e)))

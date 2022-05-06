@@ -1,8 +1,6 @@
 import urllib
 import requests
-# from utils.validate_jwt import validate_eve_jwt
 import sys
-# import requests
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError, JWTClaimsError
 
@@ -17,6 +15,8 @@ esi-bookmarks.read_character_bookmarks.v1   读取书签
 esi-characters.read_loyalty.v1 读取LP
 esi-location.read_online.v1    读取在线状态
 '''
+
+
 def validate_eve_jwt(jwt_token):
     """Validate a JWT token retrieved from the EVE SSO.
 
@@ -60,15 +60,16 @@ def validate_eve_jwt(jwt_token):
     except JWTClaimsError as e:
         try:
             return jwt.decode(
-                        jwt_token,
-                        jwk_set,
-                        algorithms=jwk_set["alg"],
-                        issuer="https://login.eveonline.com"
-                    )
+                jwt_token,
+                jwk_set,
+                algorithms=jwk_set["alg"],
+                issuer="https://login.eveonline.com"
+            )
         except JWTClaimsError as e:
             print("The issuer claim was not from login.eveonline.com or "
                   "https://login.eveonline.com: {}".format(str(e)))
             sys.exit(1)
+
 
 def print_auth_url(client_id, code_challenge=None):
     """Prints the URL to redirect users to.
@@ -108,6 +109,7 @@ def print_auth_url(client_id, code_challenge=None):
 
     return full_auth_url
 
+
 def send_token_request(form_values, add_headers={}):
     """Sends a request for an authorization token to the EVE SSO.
 
@@ -142,6 +144,7 @@ def send_token_request(form_values, add_headers={}):
     res.raise_for_status()
     return res
 
+
 def send_token_request_bk(form_values, add_headers={}):
     """Sends a request for an authorization token to the EVE SSO.
 
@@ -173,6 +176,7 @@ def send_token_request_bk(form_values, add_headers={}):
 
     return res
 
+
 def handle_sso_token_response(sso_response):
     """Handles the authorization code response from the EVE SSO.
 
@@ -195,7 +199,6 @@ def handle_sso_token_response(sso_response):
         #                   "location/".format(character_id))
         LP_path = ("https://esi.evetech.net/latest/characters/{}/loyalty/points/".format(character_id))
 
-
         # print("\nSuccess! Here is the payload received from the EVE SSO: {}"
         #       "\nYou can use the access_token to make an authenticated "
         #       "request to {}".format(data, blueprint_path))
@@ -215,10 +218,10 @@ def handle_sso_token_response(sso_response):
         res.raise_for_status()
 
         data = res.json()
-        with open("output_data/final_data.json","w") as f:
+        with open("output_data/final_data.json", "w") as f:
             f.write(str(data))
         # print("\n{} has {} blueprints".format(character_name, len(data)))
-        print(character_name,data)
+        print(character_name, data)
     else:
         print("\nSomething went wrong! Re read the comment at the top of this "
               "file and make sure you completed all the prerequisites then "
