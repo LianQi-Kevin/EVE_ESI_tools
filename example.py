@@ -1,5 +1,5 @@
 import os
-from utils.resourse_utils import get_refresh_token, refresh_token_post, get_data, translate_NPC_corpID, add_
+from resourse_utils import get_refresh_token, refresh_token_post, get_data, translate_NPC_corpID, add_
 
 
 if __name__ == '__main__':
@@ -27,6 +27,10 @@ if __name__ == '__main__':
         "read_online": 60,
     }
 
+    # set proxy
+    # os.environ["http_proxy"] = "http://127.0.0.1:52539"
+    # os.environ["https_proxy"] = "http://127.0.0.1:52539"
+
     # 获取access_token和refresh_token
     # 存储新的token(绑定新账户)
     # verify_dict, path = get_refresh_token(client_id, scope, "token")
@@ -44,38 +48,37 @@ if __name__ == '__main__':
         # 获取数据
         for data_title in list(refresh_time_sec.keys()):
             data, path = get_data("token", name, data_title, "data", refresh_time_sec[data_title])
-            # print(path)
             print(data)
 
     # LP
-    Key_ship = 0
-    LP_dict = {}
-    for filename in os.listdir("./token"):
-        name = filename.split('.')[0]
-        new_access_token, new_refresh_token = refresh_token_post(client_id, scope, "token/", name)
-        data, path = get_data("token", name, "read_loyalty", "data", 10, False)
-        # print(data)
-        for corp in data:
-            corp_name = translate_NPC_corpID(corp["corporation_id"], "zh")
-            # if corp_name in ["古斯塔斯集团"]:
-            if corp_name in ["实力派", "忠实制造"]:
-                # 噩梦
-                if corp["loyalty_points"] >= 800000:
-                    EM = int(corp["loyalty_points"] / 800000)
-                    Key_ship += EM
-                print(name, corp_name, str(corp["loyalty_points"]))
-            if corp_name not in LP_dict.keys():
-                LP_dict[corp_name] = 0
-            LP_dict[corp_name] += corp["loyalty_points"]
-    print("噩梦数量: {}".format(Key_ship))
-    print(LP_dict)
+    # Key_ship = 0
+    # LP_dict = {}
+    # for filename in os.listdir("./token"):
+    #     name = filename.split('.')[0]
+    #     new_access_token, new_refresh_token = refresh_token_post(client_id, scope, "token/", name)
+    #     data, path = get_data("token", name, "read_loyalty", "data", 10, False)
+    #     # print(data)
+    #     for corp in data:
+    #         corp_name = translate_NPC_corpID(corp["corporation_id"], "zh")
+    #         # if corp_name in ["古斯塔斯集团"]:
+    #         if corp_name in ["实力派", "忠实制造"]:
+    #             # 噩梦
+    #             if corp["loyalty_points"] >= 800000:
+    #                 EM = int(corp["loyalty_points"] / 800000)
+    #                 Key_ship += EM
+    #             print(name, corp_name, str(corp["loyalty_points"]))
+    #         if corp_name not in LP_dict.keys():
+    #             LP_dict[corp_name] = 0
+    #         LP_dict[corp_name] += corp["loyalty_points"]
+    # print("噩梦数量: {}".format(Key_ship))
+    # print(LP_dict)
 
     # Wallet
-    money = 0.0
-    for filename in os.listdir("./token"):
-        name = filename.split('.')[0]
-        # new_access_token, new_refresh_token = refresh_token_post(client_id, scope, "token/", name)
-        data, path = get_data("token", name, "read_character_wallet", "data", 180, False)
-        print(name, add_(data))
-        money += int(data)
-    print("\n各账号isk总量: {}".format(add_(money)))
+    # money = 0.0
+    # for filename in os.listdir("./token"):
+    #     name = filename.split('.')[0]
+    #     # new_access_token, new_refresh_token = refresh_token_post(client_id, scope, "token/", name)
+    #     data, path = get_data("token", name, "read_character_wallet", "data", 180, False)
+    #     print(name, add_(data))
+    #     money += int(data)
+    # print("\n各账号isk总量: {}".format(add_(money)))

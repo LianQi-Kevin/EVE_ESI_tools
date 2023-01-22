@@ -7,7 +7,5 @@ conda create -n EVE_ESI_tool python=3.8
 
 ```
 conda install -c conda-forge requests python-jose pyyaml
+pip install pyside6==6.0
 ```
-
-#### 3. 使用`utils.get_refresh_token`绑定新账户
-* 详见`example.py`

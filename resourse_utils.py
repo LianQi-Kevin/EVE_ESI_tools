@@ -4,7 +4,6 @@ import hashlib
 import json
 import os
 import secrets
-import sys
 import time
 import urllib
 import webbrowser
@@ -14,7 +13,24 @@ from urllib import parse
 import requests
 import yaml
 from jose import jwt
-from jose.exceptions import ExpiredSignatureError, JWTError, JWTClaimsError
+
+# 应用ID
+client_id = "68dfba8597464c02928ca96793b7690f"
+# 应用申请信息列表
+scope = "publicData " \
+        "esi-location.read_location.v1 " \
+        "esi-skills.read_skillqueue.v1 " \
+        "esi-wallet.read_character_wallet.v1 " \
+        "esi-ui.open_window.v1 " \
+        "esi-ui.write_waypoint.v1 " \
+        "esi-characters.read_loyalty.v1 " \
+        "esi-location.read_online.v1"
+
+# JWT
+SSO_META_DATA_URL = "https://login.eveonline.com/.well-known/oauth-authorization-server"
+JWK_ALGORITHM = "RS256"
+JWK_ISSUERS = ("login.eveonline.com", "https://login.eveonline.com")
+JWK_AUDIENCE = "EVE Online"
 
 
 # 给钱数添加','
@@ -37,7 +53,7 @@ def add_(num):
 
 
 # 获取可刷新令牌
-def get_refresh_token(client_id, scope, token_path):
+def get_refresh_token(client_id=client_id, scope=scope, token_path="token"):
     # 尝试创建数据输出文件夹
     if not os.path.exists(token_path):
         os.mkdir(token_path)
@@ -62,9 +78,8 @@ def get_refresh_token(client_id, scope, token_path):
     full_auth_url = "{}?{}".format(base_auth_url, string_params)
 
     # 验证页面并提取code参数
-    webbrowser.open_new(full_auth_url)
+    webbrowser.open(full_auth_url)
     current_url = input("\n请复制验证之后以'https://localhost/callback/'开头的完整url至此: ")
-    # url_result = parse.urlparse(browser.current_url)
     url_result = parse.urlparse(current_url)
     query_dict = parse.parse_qs(url_result.query)
     print("\ncode: " + query_dict["code"][0])
@@ -110,6 +125,7 @@ def refresh_token_post(client_id, scope, token_path, name):
         verify_dict = json.load(f)
         refresh_token = verify_dict["res"]["refresh_token"]
         f.close()
+
     # 根据可刷新令牌获取访问令牌
     # HTTP标头
     headers = {
@@ -141,58 +157,49 @@ def refresh_token_post(client_id, scope, token_path, name):
 
 
 # 根据access_token获取jwt验证信息
-def validate_eve_jwt(jwt_token):
+def validate_eve_jwt(jwt_token: str) -> dict:
     """Validate a JWT token retrieved from the EVE SSO.
 
     Args:
         jwt_token: A JWT token originating from the EVE SSO
-    Returns
-        dict: The contents of the validated JWT token if there are no
-              validation errors
+    Returns:
+        The contents of the validated JWT token if there are no validation errors
     """
-
-    jwk_set_url = "https://login.eveonline.com/oauth/jwks"
-
-    res = requests.get(jwk_set_url)
+    # fetch JWKs URL from meta data endpoint
+    res = requests.get(SSO_META_DATA_URL)
     res.raise_for_status()
-
     data = res.json()
+    try:
+        jwks_uri = data["jwks_uri"]
+    except KeyError:
+        raise RuntimeError(
+            f"Invalid data received from the SSO meta data endpoint: {data}"
+        ) from None
 
+    # fetch JWKs from endpoint
+    res = requests.get(jwks_uri)
+    res.raise_for_status()
+    data = res.json()
     try:
         jwk_sets = data["keys"]
-    except KeyError as e:
-        print("Something went wrong when retrieving the JWK set. The returned "
-              "payload did not have the expected key {}. \nPayload returned "
-              "from the SSO looks like: {}".format(e, data))
-        sys.exit(1)
+    except KeyError:
+        raise RuntimeError(
+            f"Invalid data received from the the jwks endpoint: {data}"
+        ) from None
 
-    jwk_set = next((item for item in jwk_sets if item["alg"] == "RS256"))
+    # pick the JWK with the requested algorithm
+    jwk_set = [item for item in jwk_sets if item["alg"] == JWK_ALGORITHM].pop()
 
-    try:
-        return jwt.decode(
-            jwt_token,
-            jwk_set,
-            algorithms=jwk_set["alg"],
-            issuer="login.eveonline.com"
-        )
-    except ExpiredSignatureError:
-        print("The JWT token has expired: {}")
-        sys.exit(1)
-    except JWTClaimsError:
-        try:
-            return jwt.decode(
-                jwt_token,
-                jwk_set,
-                algorithms=jwk_set["alg"],
-                issuer="https://login.eveonline.com"
-            )
-        except JWTClaimsError as e:
-            print("The issuer claim was not from login.eveonline.com or "
-                  "https://login.eveonline.com: {}".format(str(e)))
-            sys.exit(1)
-    except JWTError as e:
-        print("The JWT signature was invalid: {}").format(str(e))
-        sys.exit(1)
+    # try to decode the token and validate it against expected values
+    # will raise exceptions if decoding fails or expected values do not match
+    jwt_token = jwt.decode(
+        jwt_token,
+        jwk_set,
+        algorithms=jwk_set["alg"],
+        issuer=JWK_ISSUERS,
+        audience=JWK_AUDIENCE,
+    )
+    return jwt_token
 
 
 # 获取数据
@@ -291,3 +298,7 @@ def translate_NPC_corpID(NPC_corp_ID, Language):
     with codecs.open("sde/fsd/npcCorporations.yaml", "r", "utf-8") as corp_yaml:
         data = yaml.load(corp_yaml, Loader=yaml.FullLoader)
         return data[NPC_corp_ID]["nameID"][Language]
+
+
+if __name__ == '__main__':
+    pass
