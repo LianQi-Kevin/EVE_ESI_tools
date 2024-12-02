@@ -1,4 +1,4 @@
 python-jose
-requests~=2.31.0
-PyYAML~=6.0.1
-pyside6==6.0
+requests
+PyYAML
+pyside6
